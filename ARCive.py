@@ -90,7 +90,7 @@ class ARCive:
             elif self.version == 1003:
                 self._write_headerv1003()
             else:
-                raise RuntimeError, 'Unknowen ARCive Version'
+                raise RuntimeError, 'Unknown ARCive Version'
         elif key == 'a':
             raise NotImplementedError
         else:
@@ -104,7 +104,7 @@ class ARCive:
             raise RuntimeError, "Not a valid v1 versioninfo header: %r" % self.versioninfo
         self.creatorip = m.group('ip')
         self.creationdate = m.group('date')
-        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+) (?P<length>\d+)\n$') 
+        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+|\S+;\s+\S+) (?P<length>\d+)\n$') 
 
 
     def _parse_version_block2(self):
@@ -115,7 +115,7 @@ class ARCive:
         self.creatorip = m.group('ip')
         self.creationdate = m.group('date')
         self.creatorfilenmame = m.group('filename') 
-        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+) (?P<resultcode>\d+) (?P<checksum>.+) (?P<location>.+) (?P<offset>\d+) (?P<filename>.+) (?P<length>\d+)\n$') 
+        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+|\S+;\s+\S+) (?P<resultcode>\d+) (?P<checksum>.+) (?P<location>.+) (?P<offset>\d+) (?P<filename>.+) (?P<length>\d+)\n$') 
 
     def _parse_version_block1003(self):
         """Parse versioninfo for v1003"""
@@ -125,7 +125,7 @@ class ARCive:
         self.creatorip = m.group('ip')
         self.creationdate = m.group('date')
         self.creatorfilenmame = m.group('filename') 
-        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+(; charset=\S+)?) (?P<resultcode>\d+) (?P<checksum>.+) (?P<location>.+) (?P<offset>\d+) (?P<filename>.+) (?P<length>\d+)\n$') 
+        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+|\S+;\s+\S+?) (?P<resultcode>\d+) (?P<checksum>.+) (?P<location>.+) (?P<offset>\d+) (?P<filename>.+) (?P<length>\d+)\n$') 
 
     def _read_version_block(self):
         l = self.fd.readline()
@@ -239,16 +239,18 @@ class ARCive:
         """Read the next document from the current position.
 
         It will return a tuple (meta, data) where 'meta' is a
-        dictionary containing information about the document. Thoe
+        dictionary containing information about the document. The
         only entrys in this dictionary you can rely on are 'length' and
         'date'.
 
-        If donotdecompress is true compressed data wirr returned to
+        if the file has ended ({}, None is returned).
+
+        If donotdecompress is true compressed data will returned to
         the caller in compressed form."""
 
         l = self.fd.readline()
         if l == '':
-            return None
+          return {}, None
         if l != '\n':
             raise RuntimeError, 'invalid doc header line 1: %r' % l 
         l = self.fd.readline()
