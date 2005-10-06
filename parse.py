@@ -27,42 +27,48 @@ def dbinsert(host, entries):
 
 	for entry in entries:
 #		crs.execute("INSERT INTO entries (host_id, path) VALUES(%d, '%s')" % (hostid, _mysql.escape_string(entry)))
-		print entry
+		print host, entry
 
 def processfile(filename):
-	file = ARCive.ARCive(filename)
+	arc = ARCive.ARCive(filename)
 
-	meta, content = file.readRawDoc()
+	ret = []
+	while 1:
+		meta, content = arc.readRawDoc()
+		if not content:
+			break # done
 
-	if meta['resultcode'] != '200':
-		return
-
-	host = meta['url'].split('/')[2]
-
-	c = content.split("\r\n\r\n")
-	if len(c) > 1:
-		# separate header from bdoy
-		body = "".join(c[1:])
-	else:
-		# there are no headers
-		body = c[0]
-
-	entries = Set()
-
-	r = MyRobotFileParser(StringIO(body))
-	r.read()
-
-	for e in r.entries:
-		for rule in e.rulelines:
-			if rule.allowance == 0:
-				entries.add(rule.path)
-
-	return host, entries
-
+		if meta['resultcode'] != '200':
+			return
+	
+		host = meta['url'].split('/')[2]
+	
+		c = content.split("\r\n\r\n")
+		if len(c) > 1:
+			# separate header from bdoy
+			body = "".join(c[1:])
+		else:
+			# there are no headers
+			body = c[0]
+	
+		entries = Set()
+	
+		r = MyRobotFileParser(StringIO(body))
+		r.read()
+	
+		for e in r.entries:
+			for rule in e.rulelines:
+				if rule.allowance == 0:
+					entries.add(rule.path)
+	
+		ret.append((host, entries))
+	return ret
+	
 if __name__ == "__main__":
 	if len(sys.argv) != 2: 
 		sys.stderr.write("Usage: %s filename\n" % (sys.argv[0]))
 
-	host, entries = processfile(sys.argv[1])
-	dbinsert(host, entries)
+	res = processfile(sys.argv[1])
+	for host, entries in res:
+		dbinsert(host, entries)
 
