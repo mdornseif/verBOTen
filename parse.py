@@ -61,14 +61,12 @@ def processfile(filename):
 				if rule.allowance == 0:
 					entries.add(rule.path)
 	
-		ret.append((host, entries))
-	return ret
+		yield(host, entries)
 	
 if __name__ == "__main__":
 	if len(sys.argv) != 2: 
 		sys.stderr.write("Usage: %s filename\n" % (sys.argv[0]))
 
-	res = processfile(sys.argv[1])
-	for host, entries in res:
+	for host, entries in processfile(sys.argv[1]):
 		dbinsert(host, entries)
 
