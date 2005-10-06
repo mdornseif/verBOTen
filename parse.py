@@ -8,6 +8,9 @@ from sets import Set
 from cStringIO import StringIO
 from robotparser import RobotFileParser
 
+conn = MySQLdb.connect (host = "localhost", user = "root", passwd = "", db = "lufgrails_dev")
+cursor = conn.cursor()
+
 class MyRobotFileParser(RobotFileParser):
 	def __init__(self, file=None):
 		RobotFileParser.__init__(self)
@@ -22,12 +25,23 @@ class MyRobotFileParser(RobotFileParser):
 
 def dbinsert(host, entries):
 
-#	crs.execute("INSERT INTO hosts (host) VALUES(%s)" % (_mysql.escape_string(filename)))
-#	hostid = crs.lastrowid
+	cursor.execute("select id from archive_hosts where host = %s", host)
+	row = cursor.fetchone()
+	if row == None:
+		# add that row
+		row = cursor.fetchone ()
+		cursor.execute("INSERT INTO hosts (host) VALUES(%s)", host)
+		hostid = crs.lastrowid
+	else:
+		hostid = row[0]
 
-	for entry in entries:
-#		crs.execute("INSERT INTO entries (host_id, path) VALUES(%d, '%s')" % (hostid, _mysql.escape_string(entry)))
-		print host, entry
+	for path in entries:
+		cursor.execute("select id from archive_robots_disallows where path = %s", host)
+		row = cursor.fetchone()
+		if row == None:
+			# add that row
+			cursor.execute("INSERT INTO archive_robots_disallows (archive_host_id, path) VALUES(%s, '%s')", str(hostid), path)
+			print host, entry
 
 def processfile(filename):
 	arc = ARCive.ARCive(filename)
