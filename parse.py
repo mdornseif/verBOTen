@@ -1,13 +1,16 @@
 #!/usr/bin/python
 
+# reads .ARC files and addt the contents to the database
+
 import sys
 import ARCive
-#import _mysql
-#import MySQLdb
+import _mysql
+import MySQLdb
 from sets import Set
 from cStringIO import StringIO
 from robotparser import RobotFileParser
 
+# aqdd your dbname and password here
 conn = MySQLdb.connect (host = "localhost", user = "root", passwd = "", db = "lufgrails_dev")
 cursor = conn.cursor()
 
@@ -24,24 +27,25 @@ class MyRobotFileParser(RobotFileParser):
 
 
 def dbinsert(host, entries):
-
+	if len(entries) == 0:
+		return
 	cursor.execute("select id from archive_hosts where host = %s", host)
 	row = cursor.fetchone()
 	if row == None:
 		# add that row
 		row = cursor.fetchone ()
-		cursor.execute("INSERT INTO hosts (host) VALUES(%s)", host)
-		hostid = crs.lastrowid
+		cursor.execute("INSERT INTO archive_hosts (host) VALUES(%s)", host)
+		hostid = cursor.lastrowid
 	else:
 		hostid = row[0]
 
 	for path in entries:
-		cursor.execute("select id from archive_robots_disallows where path = %s", host)
+		cursor.execute("select id from archive_robots_disallows where path = %s", path)
 		row = cursor.fetchone()
 		if row == None:
 			# add that row
-			cursor.execute("INSERT INTO archive_robots_disallows (archive_host_id, path) VALUES(%s, '%s')", str(hostid), path)
-			print host, entry
+			cursor.execute("INSERT INTO archive_robots_disallows (archive_host_id, path) VALUES(%d, '%s')" % (hostid, _mysql.escape_string(path)))
+			print host, path
 
 def processfile(filename):
 	arc = ARCive.ARCive(filename)
@@ -53,7 +57,7 @@ def processfile(filename):
 			break # done
 
 		if meta['resultcode'] != '200':
-			return
+			continue
 	
 		host = meta['url'].split('/')[2]
 	
@@ -75,12 +79,13 @@ def processfile(filename):
 				if rule.allowance == 0:
 					entries.add(rule.path)
 	
-		yield(host, entries)
+		yield(host.lower(), entries)
 	
 if __name__ == "__main__":
-	if len(sys.argv) != 2: 
+	if not len(sys.argv) > 1: 
 		sys.stderr.write("Usage: %s filename\n" % (sys.argv[0]))
-
-	for host, entries in processfile(sys.argv[1]):
-		dbinsert(host, entries)
+	for infile in sys.argv[1:]:
+		print "processing %r:" % infile
+		for host, entries in processfile(infile):
+			dbinsert(host, entries)
 
