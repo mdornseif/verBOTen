@@ -123,7 +123,7 @@ class ARCive:
         self.creatorip = m.group('ip')
         self.creationdate = m.group('date')
         self.creatorfilenmame = m.group('filename') 
-        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+|\S+;\s+\S+) (?P<resultcode>\d+) (?P<checksum>.+) (?P<location>.+) (?P<offset>\d+) (?P<filename>.+) (?P<length>\d+)\n$') 
+        self.urlrecord_re = re.compile(r'^(?P<url>.+) (?P<archiverip>[0-9.]+) (?P<date>\d+) (?P<contenttype>\S+(\s*;\s*(\S+|\S+\s*=\s*\S+))*) (?P<resultcode>\d+) (?P<checksum>.\S+) (?P<location>.\S) (?P<offset>\d+) (?P<filename>\S+) (?P<length>\d+)\n$') 
 
     def _parse_version_block1003(self):
         """Parse versioninfo for v1003"""
